@@ -1,8 +1,10 @@
 const bcrypt = require("bcrypt");
 const jwt = require('jsonwebtoken');
-var crypto = require("crypto-js");
+const crypto = require("crypto-js");
 
 const User = require("../models/user");
+
+const utils = require("../utils/utils");
 
 //CREATION DU L'UTILISATEUR
 exports.signup = (req, res, next) => {
@@ -37,7 +39,7 @@ exports.signin = (req, res, next) => {
                 userId: user._id,
                 token: jwt.sign(
                     {userId: user._id},
-                    "RANDOM_TOKEN_SECRET", //CETTE CLE DEVRA ÊTRE REMPLACER LORS DE L'INSTALLATION EN PRODUCTION
+                    utils.getTokenJWT(), //RECUPERATION DE LA CLE DANS LE FICHIER UTILS.JS
                     {expiresIn: "24h"} //LA CLE N'EST VALIDE QUE 24h
                 )
             });
