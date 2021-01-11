@@ -1,3 +1,6 @@
+const mongoose = require("mongoose");
+
+const User = require("../models/user");
 const Sauce = require("../models/sauce");
 
 //RECUPERATION DES SAUCES
@@ -16,7 +19,8 @@ exports.getSauce = (req, res, next) => {
 
 //CREATION D'UNE SAUCE
 exports.createSauce = (req, res, next) => {
-    const sauceObject = req.body.sauce;
+    console.log("OK");
+    const sauceObject = JSON.parse(req.body.sauce);
     const sauce = new Sauce({
         userId: sauceObject.userId,
         name: sauceObject.name,
@@ -28,23 +32,24 @@ exports.createSauce = (req, res, next) => {
         usersLiked: [],
         usersDisliked: []
     });
-    Sauce.find().then(sauce => {
-        Sauce.updateOne({ _id: sauce._id}, {
-            likes: 0,
-            dislikes: 0,
-            usersLiked: [],
-            usersDisliked: []
-        });
-    });
+    Sauce.updateOne({}, {
+        likes: 0,
+        dislikes: 0,
+        usersLiked: [],
+        usersDisliked: []
+    }).catch(error => res.status(400).json({ error }));
     sauce.save()
         .then(() => res.status(201).json({ message: "Sauce crée avec succés !"}))
-        .catch(error => res.status(400).json({ error }));
+        .catch(error => {
+            console.log(error);
+            res.status(400).json({ error })
+        });
 }
 
 //MISE A JOUR D'UNE SAUCE
 exports.updateSauce = (req, res, next) => {
     if(req.body.sauce){ //UN FICHIER EST FOURNIS
-        const sauceObject = req.body.sauce;
+        const sauceObject = JSON.parse(req.body.sauce);
         Sauce.updateOne({ _id: req.params.id}, {
             name: sauceObject.name,
             manufacturer: sauceObject.manufacturer,
@@ -86,15 +91,20 @@ exports.likeSauce = (req, res, next) => {
             if(req.body.like === 0){ // L'UTILISATEUR SUPPRIME SON AVIS
                 res.status(200).json({ message: "Votre réaction a été supprimé !"})
             }else if(req.body.like === 1){ // L'UTILISATEUR AIME LA SAUCE
+                sauce.usersLiked.push(req.body.userId);
                 Sauce.updateOne({ _id: sauce._id }, {
-                    usersLiked: sauce.usersLiked.push(userId),
+                    usersLiked: sauce.usersLiked,
                     likes: sauce.likes + 1
                 })
                     .then(() => res.status(200).json({ message: "Vous aimez cette sauce !"}))
-                    .catch(error => res.status(400).json({ error }));
+                    .catch(error => {
+                        console.log(error);
+                        res.status(400).json({ error })
+                    });
             }else if(req.body.like === -1){ // L'UTILISATEUR N'AIME PAS LA SAUCE
+                sauce.usersDisliked.push(req.body.userId);
                 Sauce.updateOne({ _id: sauce._id }, {
-                    usersDisliked: sauce.usersDisliked.push(userId),
+                    usersDisliked: sauce.usersDisliked,
                     dislikes: sauce.dislikes + 1
                 })
                     .then(() => res.status(200).json({ message: "Vous aimez cette sauce !"}))
@@ -108,20 +118,18 @@ exports.likeSauce = (req, res, next) => {
 
 //SUPPRESSION DES REACTIONS D'UN UTILISATEUR SUR UNE SAUCE
 const removeReaction = (userid, sauce) =>{
-    const usersLiked = sauce.usersLiked;
-    const usersDisliked = sauce.usersDisliked;
-    if(usersLiked.includes(userid)){
-        usersLiked.remove(userid);
+    if(sauce.usersLiked.includes(userid)){
+        sauce.usersLiked.remove(userid);
         Sauce.updateOne({ _id: sauce._id }, {
-            usersLiked: usersLiked,
+            usersLiked: sauce.usersLiked,
             likes: sauce.likes - 1
-        });
+        }).then();
     }
-    if(usersDisliked.includes(userid)){
-        usersDisliked.remove(userid);
+    if(sauce.usersDisliked.includes(userid)){
+        sauce.usersDisliked.remove(userid);
         Sauce.updateOne({ _id: sauce._id }, {
-            usersDisliked: usersDisliked,
+            usersDisliked: sauce.usersDisliked,
             dislikes: sauce.dislikes - 1
-        });
+        }).then();
     }
 }

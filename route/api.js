@@ -6,7 +6,6 @@ const saucesCtrl = require("../controllers/sauce");
 const authMiddleware = require("../middleware/auth");
 const multerMiddleware = require("../middleware/multer-config");
 
-
 router.post("/auth/signup", authCtrl.signup);
 router.post("/auth/login", authCtrl.signin);
 
