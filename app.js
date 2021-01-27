@@ -2,12 +2,16 @@ const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const path = require("path");
+const env = require("dotenv");
 const apiRoutes = require("./route/api");
 
 const app = express();
 
+//Chargement du fichier .env
+env.config();
+
 // Connexion à la base de données
-mongoose.connect('mongodb+srv://editor:QNo8dtduS7dC2pAp@cluster0.v4rxq.mongodb.net/so_pekocko?retryWrites=true&w=majority',
+mongoose.connect(process.env.MONGODB,
     { useNewUrlParser: true,
         useUnifiedTopology: true })
     .then(() => console.log('Connexion à MongoDB réussie !'))
@@ -25,7 +29,7 @@ app.use((req, res, next) => {
 app.use(bodyParser.json());
 
 // Accès au dossier images
-app.use('/images', express.static(path.join(__dirname, 'images')));
+app.use('/upload', express.static(path.join(__dirname, 'upload')));
 
 // Routes de l'API
 app.use("/api", apiRoutes);

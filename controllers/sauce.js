@@ -19,7 +19,6 @@ exports.getSauce = (req, res, next) => {
 
 //CREATION D'UNE SAUCE
 exports.createSauce = (req, res, next) => {
-    console.log("OK");
     const sauceObject = JSON.parse(req.body.sauce);
     const sauce = new Sauce({
         userId: sauceObject.userId,
@@ -27,17 +26,21 @@ exports.createSauce = (req, res, next) => {
         manufacturer: sauceObject.manufacturer,
         description: sauceObject.description,
         mainPepper: sauceObject.mainPepper,
-        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`, //ROUTE DE L'IMAGE
+        imageUrl: `${req.protocol}://${req.get('host')}/upload/${req.file.filename}`, //ROUTE DE L'IMAGE
         heat: sauceObject.heat,
         usersLiked: [],
         usersDisliked: []
     });
+
+    // Remise à 0 des likes et dislikes de toutes les sauces
     Sauce.updateOne({}, {
         likes: 0,
         dislikes: 0,
         usersLiked: [],
         usersDisliked: []
     }).catch(error => res.status(400).json({ error }));
+
+    //Insertion de la sauce dans la base de données
     sauce.save()
         .then(() => res.status(201).json({ message: "Sauce crée avec succés !"}))
         .catch(error => {
@@ -55,7 +58,7 @@ exports.updateSauce = (req, res, next) => {
             manufacturer: sauceObject.manufacturer,
             description: sauceObject.description,
             mainPepper: sauceObject.mainPepper,
-            imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`, //ROUTE DE L'IMAGE
+            imageUrl: `${req.protocol}://${req.get('host')}/upload/${req.file.filename}`, //ROUTE DE L'IMAGE
             heat: sauceObject.heat,
         })
             .then(() => res.status(200).json({ message: "La sauce a été modifié avec succés !"}))
@@ -87,31 +90,34 @@ exports.likeSauce = (req, res, next) => {
         .then(sauce => {
 
             removeReaction(req.body.userId, sauce); //SUPPRESSION DES REACTIONS DE L'UTILISATEUR SUR LA SAUCE
-
+            let action;
             if(req.body.like === 0){ // L'UTILISATEUR SUPPRIME SON AVIS
                 res.status(200).json({ message: "Votre réaction a été supprimé !"})
+                return;
             }else if(req.body.like === 1){ // L'UTILISATEUR AIME LA SAUCE
                 sauce.usersLiked.push(req.body.userId);
-                Sauce.updateOne({ _id: sauce._id }, {
+                sauce.likes += 1;
+                action = {
                     usersLiked: sauce.usersLiked,
-                    likes: sauce.likes + 1
-                })
-                    .then(() => res.status(200).json({ message: "Vous aimez cette sauce !"}))
-                    .catch(error => {
-                        console.log(error);
-                        res.status(400).json({ error })
-                    });
+                    likes: sauce.likes,
+                }
             }else if(req.body.like === -1){ // L'UTILISATEUR N'AIME PAS LA SAUCE
                 sauce.usersDisliked.push(req.body.userId);
-                Sauce.updateOne({ _id: sauce._id }, {
+                sauce.dislikes += 1;
+                action = {
                     usersDisliked: sauce.usersDisliked,
-                    dislikes: sauce.dislikes + 1
-                })
-                    .then(() => res.status(200).json({ message: "Vous aimez cette sauce !"}))
-                    .catch(error => res.status(400).json({ error }));
+                    dislikes: sauce.dislikes
+                }
             }else{
                 res.status(400).json({ error: "Votre réaction est inconnu !"})
+                return;
             }
+
+            Sauce.updateOne({ _id: sauce._id }, action)
+                .then(() => res.status(200).json({ message: "Vous aimez cette sauce !"}))
+                .catch(error => {
+                    console.log(error);
+                    res.status(400).json({ error }) });
         })
         .catch(error => res.status(404).json({ error }));
 };
