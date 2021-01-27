@@ -5,4 +5,6 @@ Le frontend est disponible sur ce repository https://github.com/OpenClassrooms-S
 
 Il est nécessaire de changer dans le .env l'URL de connexion à la base de données MongoDB
 
-Lancement du serveur backend via la commande nodemon serve
+Pour lancer le serveur, il est nécessaire d'exécuter les commandes suivantes:
+- npm install
+- nodemon serve
